@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game Ular Dhany - Login & Game</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #e0f7fa;
+      text-align: center;
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: flex-start;
+      padding-top: 80px;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 40px;
+      color: #00e5ff;
+      text-shadow: 0 0 10px #00bcd4;
+    }
+    .screen {
+      display: none;
+      max-width: 400px;
+      margin: 0 auto 50px;
+      background: rgba(0,0,0,0.3);
+      padding: 25px 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 150, 200, 0.6);
+      animation: fadeInDown 0.6s ease forwards;
+    }
+    @keyframes fadeInDown {
+      from {opacity: 0; transform: translateY(-20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    .active { display: block; }
+    input[type="text"] {
+      width: 100%;
+      padding: 15px 12px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      background: #00e5ff;
+      color: #004d40;
+      font-weight: 700;
+      font-size: 20px;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(0, 229, 255, 0.7);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:hover {
+      background-color: #00b8d4;
+      box-shadow: 0 8px 20px rgba(0, 184, 212, 0.9);
+    }
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      color: #b2ebf2;
+    }
+    #gameCanvas {
+      background-color: #000c14;
+      border: 3px solid #00e5ff;
+      border-radius: 15px;
+      display: block;
+      margin: 20px auto;
+      max-width: 90vw;
+      width: 400px;
+      height: 400px;
+      touch-action: none; /* cegah zoom dan scroll default di canvas */
+    }
+    #score, #levelDisplay {
+      font-size: 1.3rem;
+      margin: 10px 0;
+      color: #00e5ff;
+      font-weight: 600;
+    }
+    #footer {
+      font-size: 0.9rem;
+      color: #80deea;
+      margin-bottom: 30px;
+      user-select: none;
+    }
+    /* Tombol kontrol panah untuk HP */
+    #controlButtons {
+      max-width: 400px;
+      margin: 0 auto 40px;
+      display: none; /* default sembunyi, muncul di layar kecil */
+      user-select: none;
+    }
+    #controlButtons button {
+      width: 60px;
+      height: 60px;
+      margin: 5px;
+      font-size: 24px;
+      font-weight: 700;
+      border-radius: 10px;
+      border: none;
+      background: #00e5ff;
+      color: #004d40;
+      box-shadow: 0 6px 12px rgba(0, 229, 255, 0.7);
+      cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    #controlButtons button:active {
+      background-color: #00b8d4;
+      box-shadow: 0 8px 20px rgba(0, 184, 212, 0.9);
+    }
+    #controlButtons .row {
+      display: flex;
+      justify-content: center;
+    }
+
+    @media (max-width: 450px) {
+      body { padding-top: 40px; }
+      h1 { font-size: 2rem; margin-bottom: 30px; }
+      .screen { max-width: 90vw; padding: 20px; margin-bottom: 40px; }
+      input[type="text"], button { font-size: 16px; padding: 12px; }
+      #gameCanvas { width: 95vw; height: 95vw; }
+      #controlButtons {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎮 Game hiburan🎮</h1>
+
+  <div id="loadingScreen" class="screen active">
+    <p>Loading gambar... Mohon tunggu sebentar.</p>
+  </div>
+
+  <div id="loginScreen" class="screen">
+    <p>Masukkan Nama Kamu untuk Memulai</p>
+    <input type="text" id="playerName" placeholder="Contoh: Dhany Dewanto" />
+    <button onclick="showInfo()">Lanjut</button>
+  </div>
+
+  <div id="infoScreen" class="screen">
+    <p>Halo, <strong><span id="nameDisplay"></span></strong>! 👋</p>
+    <p>
+      🎯 Misi kamu adalah menggerakkan ular untuk memakan <strong>10 apel</strong> yang muncul secara acak di layar.<br />
+      Hindari menabrak badan ular sendiri atau dinding permainan agar tidak kalah.<br />
+      Setelah makan 10 apel, kamu akan naik level dan misi bertambah menantang! 🎉
+    </p>
+    <button onclick="startGame()">Mulai Game</button>
+  </div>
+
+  <div id="gameScreen" class="screen">
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <p>🍎 Skor: <span id="score">0</span> / 10 | 🎯 Level: <span id="levelDisplay">1</span></p>
+    
+    <!-- Tombol kontrol arah untuk HP -->
+    <div id="controlButtons">
+      <div class="row">
+        <button onclick="setDirection('up')">↑</button>
+      </div>
+      <div class="row">
+        <button onclick="setDirection('left')">←</button>
+        <button onclick="setDirection('down')">↓</button>
+        <button onclick="setDirection('right')">→</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOverScreen" class="screen">
+    <p>💀 Game Over! Kamu menabrak!</p>
+    <button onclick="restartGame()">Coba Lagi</button>
+  </div>
+
+  <div id="winScreen" class="screen">
+    <p>🏆 Selamat! Kamu menyelesaikan misi!</p>
+    <button onclick="restartGame()">Main Lagi</button>
+  </div>
+
+  <div id="footer">Website ini dibuat oleh Dhani Dewanto Putra.</div>
+
+  <!-- Gambar ular dan apel (hidden) -->
+  <img id="snakeImg" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/OOjs_UI_icon_snake.svg/1024px-OOjs_UI_icon_snake.svg.png" style="display:none" />
+  <img id="appleImg" src="https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg" style="display:none" />
+
+  <!-- Suara -->
+  <audio id="eatSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="gameOverSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+
+<script>
+  const loadingScreen = document.getElementById('loadingScreen');
+  const loginScreen = document.getElementById('loginScreen');
+  const infoScreen = document.getElementById('infoScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const winScreen = document.getElementById('winScreen');
+  const nameDisplay = document.getElementById('nameDisplay');
+  const playerNameInput = document.getElementById('playerName');
+  const scoreDisplay = document.getElementById('score');
+  const levelDisplay = document.getElementById('levelDisplay');
+  const eatSound = document.getElementById('eatSound');
+  const gameOverSound = document.getElementById('gameOverSound');
+  const snakeImg = document.getElementById('snakeImg');
+  const appleImg = document.getElementById('appleImg');
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  let tileCount = 20;
+  let gridSize = canvas.width / tileCount;
+  let snake = [];
+  let apple = { x: 0, y: 0 };
+  let direction = 'right';
+  let nextDirection = 'right';
+  let score = 0;
+  let level = 1;
+  let speed = 150;
+  let gameInterval;
+  let playerName = '';
+
+  const snakeColors = ['lime', 'cyan', 'yellow', 'orange', 'pink', 'aqua', 'gold', 'violet', 'greenyellow', 'red'];
+
+  function imagesLoaded() {
+    return snakeImg.complete && appleImg.complete;
+  }
+
+  function checkImagesLoaded() {
+    if (imagesLoaded()) {
+      loadingScreen.classList.remove('active');
+      loginScreen.classList.add('active');
+    } else {
+      setTimeout(checkImagesLoaded, 100);
+    }
+  }
+
+  checkImagesLoaded();
+
+  function showInfo() {
+    const name = playerNameInput.value.trim();
+    if (name.length < 2) return alert("Nama minimal 2 huruf ya, Dhany 😄");
+    playerName = name;
+    nameDisplay.textContent = playerName;
+    loginScreen.classList.remove('active');
+    infoScreen.classList.add('active');
+  }
+
+  function startGame() {
+    infoScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    resetGame();
+    gameInterval = setInterval(gameLoop, speed);
+  }
+
+  function resetGame() {
+    snake = [{ x: 10, y: 10 }];
+    direction = 'right';
+    nextDirection = 'right';
+    score = 0;
+    level = 1;
+    speed = 150;
+    placeApple();
+    updateScore();
+  }
+
+  function updateScore() {
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
+  }
+
+  function gameLoop() {
+    const head = { ...snake[0] };
+    switch (nextDirection) {
+      case 'up': head.y--; break;
+      case 'down': head.y++; break;
+      case 'left': head.x--; break;
+      case 'right': head.x++; break;
+    }
+    direction = nextDirection;
+
+    if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) return gameOver();
+    if (snake.some(segment => segment.x === head.x && segment.y === head.y)) return gameOver();
+
+    snake.unshift(head);
+
+    if (head.x === apple.x && head.y === apple.y) {
+      score++;
+      eatSound.play();
+      if (score >= 10) {
+        level++;
+        score = 0;
+        if (level > 10) return winGame();
+        speed = Math.max(50, speed - 10);
+        clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, speed);
+        updateScore();
+        showLevelUpEffect();
+      }
+      placeApple();
+    } else {
+      snake.pop();
+    }
+
+    updateScore();
+    drawGame();
+  }
+
+  function drawGame() {
+    ctx.fillStyle = '#000c14';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(appleImg, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+
+    for (let i = 0; i < snake.length; i++) {
+      ctx.fillStyle = snakeColors[level - 1] || 'lime';
+      ctx.fillRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize, gridSize);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize, gridSize);
+    }
+  }
+
+  function placeApple() {
+    let newX, newY;
+    do {
+      newX = Math.floor(Math.random() * tileCount);
+      newY = Math.floor(Math.random() * tileCount);
+    } while (snake.some(segment => segment.x === newX && segment.y === newY));
+    apple.x = newX;
+    apple.y = newY;
+  }
+    
+function placeApple() {
+  do {
+    apple.x = Math.floor(Math.random() * tileCount);
+    apple.y = Math.floor(Math.random() * tileCount);
+  } while (snake.some(segment => segment.x === apple.x && segment.y === apple.y));
+}
+
+function gameOver() {
+  clearInterval(gameInterval);
+  gameOverSound.play();
+  gameScreen.classList.remove('active');
+  gameOverScreen.classList.add('active');
+}
+
+function winGame() {
+  clearInterval(gameInterval);
+  gameScreen.classList.remove('active');
+  winScreen.classList.add('active');
+}
+
+function restartGame() {
+  gameOverScreen.classList.remove('active');
+  winScreen.classList.remove('active');
+  loginScreen.classList.add('active');
+  playerNameInput.value = '';
+}
+
+// Atur arah berdasarkan input keyboard
+window.addEventListener('keydown', function(e) {
+  switch(e.key) {
+    case 'ArrowUp':
+      if (direction !== 'down') nextDirection = 'up';
+      break;
+    case 'ArrowDown':
+      if (direction !== 'up') nextDirection = 'down';
+      break;
+    case 'ArrowLeft':
+      if (direction !== 'right') nextDirection = 'left';
+      break;
+    case 'ArrowRight':
+      if (direction !== 'left') nextDirection = 'right';
+      break;
+  }
+});
+
+// Tombol kontrol arah untuk layar sentuh
+function setDirection(dir) {
+  // Cegah berbalik arah secara langsung
+  if ((dir === 'up' && direction === 'down') ||
+      (dir === 'down' && direction === 'up') ||
+      (dir === 'left' && direction === 'right') ||
+      (dir === 'right' && direction === 'left')) {
+    return;
+  }
+  nextDirection = dir;
+}
+
+function showLevelUpEffect() {
+  // Efek sederhana saat naik level (misalnya, flash teks level)
+  levelDisplay.style.color = '#ffeb3b';
+  setTimeout(() => {
+    levelDisplay.style.color = '#00e5ff';
+  }, 500);
+}
+
+
+
+
+
+  function gameOver() {
+    clearInterval(gameInterval);
+    gameOverSound.play();
+    gameScreen.classList.remove('active');
+    gameOverScreen.classList.add('active');
+  }
+
+  function winGame() {
+    clearInterval(gameInterval);
+    gameScreen.classList.remove('active');
+    winScreen.classList.add('active');
+  }
+
+  function restartGame() {
+    gameOverScreen.classList.remove('active');
+    winScreen.classList.remove('active');
+    loginScreen.classList.add('active');
+  }
+
+  function setDirection(dir) {
+    const opposite = {
+      'up': 'down',
+      'down': 'up',
+      'left': 'right',
+      'right': 'left'
+    };
+    if (dir !== opposite[direction]) {
+      nextDirection = dir;
+    }
+  }
+
+  // Keyboard
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp') setDirection('up');
+    else if (e.key === 'ArrowDown') setDirection('down');
+    else if (e.key === 'ArrowLeft') setDirection('left');
+    else if (e.key === 'ArrowRight') setDirection('right');
+  });
+
+  // Mobile touch
+  document.querySelectorAll('.controls button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dir = btn.getAttribute('data-dir');
+      setDirection(dir);
+    });
+  });
+
+  function showLevelUpEffect() {
+    const effect = document.createElement('div');
+    effect.innerHTML = "✨ Level " + level + "!";
+    effect.style.position = 'absolute';
+    effect.style.top = '50%';
+    effect.style.left = '50%';
+    effect.style.transform = 'translate(-50%, -50%)';
+    effect.style.fontSize = '2rem';
+    effect.style.color = 'gold';
+    effect.style.animation = 'fade 2s ease-out';
+    document.body.appendChild(effect);
+    setTimeout(() => effect.remove(), 2000);
+  }
+</script>
+
+<style>
+  @keyframes fade {
+    0% {opacity: 1; transform: translate(-50%, -50%) scale(1);}
+    100% {opacity: 0; transform: translate(-50%, -50%) scale(2);}
+  }
+</style>
+
+
+
+</body>
+</html> 
